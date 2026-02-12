@@ -22,7 +22,7 @@ on:
       DEVICE_PATH:
         description: 'Specify your Device Path'
         required: true
-        default: 'device/generic/X6725B'
+        default: 'device/infinix/X6725B'
       DEVICE_NAME:
         description: 'Specify your Device Codename'
         required: true
@@ -84,11 +84,9 @@ jobs:
     - name: Building OrangeFox
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
-        set +e
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
-        set -e
-        lunch twrp_${{ inputs.DEVICE_NAME }}-eng && make clean && mka adbd ${{ inputs.BUILD_TARGET }}image
+        lunch twrp_X6725B-eng && make clean && mka recoveryimage
 
     - name: Set Release Properties
       run: |
@@ -115,8 +113,8 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/*.zip
-          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/*.img
+          OrangeFox/fox_12.1/out/target/product/X6725B/OrangeFox*.zip
+          OrangeFox/fox_12.1/out/target/product/X6725B/recovery.img
         name: OrangeFox Recovery for ${{ inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
         tag_name: ${{ github.run_id }}
         body: |
