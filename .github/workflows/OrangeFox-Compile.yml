@@ -30,7 +30,7 @@ on:
       BUILD_TARGET:
         description: 'Specify your Build Target'
         required: true
-        default: 'vendorboot'
+        default: 'recovery'
         type: choice
         options:
         - boot
@@ -105,9 +105,8 @@ jobs:
       with:
         name: OrangeFox_Build_Files
         path: |
-          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/**/OrangeFox*.zip
-          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/**/recovery.img
-          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/**/vendor_boot.img
+          OrangeFox/fox_12.1/out/target/product/X6725B/OrangeFox*.zip
+          OrangeFox/fox_12.1/out/target/product/X6725B/recovery.img
 
     - name: Upload to Release
       uses: softprops/action-gh-release@v2
@@ -115,9 +114,6 @@ jobs:
         files: |
           OrangeFox/fox_12.1/out/target/product/X6725B/OrangeFox*.zip
           OrangeFox/fox_12.1/out/target/product/X6725B/recovery.img
-        name: OrangeFox Recovery for ${{ inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
-        tag_name: ${{ github.run_id }}
-        body: |
-          Build: fox_${{ inputs.MANIFEST_BRANCH }}
-          Device: [Device Tree](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
-          Commit: ${{ env.COMMIT_ID }}
+        name: OrangeFox Recovery for X6725B // ${{ env.BUILD_DATE }}
+        tag_name: ${{ github.run_id }}}
+        
