@@ -56,6 +56,13 @@ jobs:
         cd ${GITHUB_WORKSPACE}/PBRP
         git clone --depth=1 ${{ inputs.DEVICE_TREE }} -b main ${{ inputs.DEVICE_PATH }}
 
+    - name: Download Large Kernel
+      run: |
+        cd ${GITHUB_WORKSPACE}/PBRP/device/infinix/X6725B
+        mkdir -p prebuilt
+        cd prebuilt
+        wget -O kernel "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/kernel"
+        
     - name: Building PBRP
       run: |
         cd ${GITHUB_WORKSPACE}/PBRP
