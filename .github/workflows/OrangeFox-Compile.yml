@@ -58,10 +58,11 @@ jobs:
 
     - name: Download Large Kernel
       run: |
-        cd ${GITHUB_WORKSPACE}/PBRP/device/infinix/X6725B
+        cd $GITHUB_WORKSPACE/PBRP
         mkdir -p device/infinix/X6725B/prebuilt
         wget -O device/infinix/X6725B/prebuilt/kernel "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/kernel"
-        ls -l device/infinix/X6725B/prebuilt/
+        chmod +x device/infinix/X6725B/prebuilt/kernel
+        ls -R device/infinix/X6725B/prebuilt/
     - name: Building PBRP
       run: |
         cd ${GITHUB_WORKSPACE}/PBRP
