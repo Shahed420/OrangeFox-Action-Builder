@@ -42,13 +42,7 @@ jobs:
         chmod a+x ~/bin/repo
         sudo ln -sf ~/bin/repo /usr/bin/repo
 
-    - name: Sync Manifest
-      run: |
-        mkdir -p ${GITHUB_WORKSPACE}/PBRP
-        cd ${GITHUB_WORKSPACE}/PBRP
-        repo init -u https://github.com/PitchBlackRecoveryProject/manifest_pb.git -b ${{ inputs.MANIFEST_BRANCH }}
-        repo sync -j$(nproc --all) --force-sync --no-tags --no-clone-bundle --prune --optimized-fetch
-
+    
     - name: Clone Device Tree
       run: |
         cd ${GITHUB_WORKSPACE}/PBRP
