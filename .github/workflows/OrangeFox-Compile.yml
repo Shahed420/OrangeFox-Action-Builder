@@ -45,7 +45,9 @@ jobs:
     
     - name: Clone Device Tree
       run: |
-        cd ${GITHUB_WORKSPACE}/PBRP
+        cd ${GITHUB_WORKSPACE}
+        mkdir -p PBRP
+        cd PBRP
         git clone ${{ inputs.DEVICE_TREE }} -b main ${{ inputs.DEVICE_PATH }}
 
     - name: Building PBRP
@@ -53,7 +55,7 @@ jobs:
         cd ${GITHUB_WORKSPACE}/PBRP
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
-        lunch twrp_${{ inputs.DEVICE_NAME }}-eng
+        lunch twrp_X6725B-eng
         make clean
         mka pbrp -j$(nproc --all)
 
