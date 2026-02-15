@@ -58,19 +58,18 @@ jobs:
 
     - name: Download and Prepare Prebuilt Files
       run: |
+        # ফোল্ডার পাথটি ভেরিয়েবল হিসেবে সেট করছি যাতে ভুল না হয়
         DEVICE_PATH="device/infinix/X6725B"
         mkdir -p $DEVICE_PATH/prebuilt
         
+        # ১. কার্নেল ডাউনলোড (Release থেকে)
         wget -O $DEVICE_PATH/prebuilt/kernel "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/kernel"
         
-        mkdir -p out/target/product/X6725B
-        cp $DEVICE_PATH/prebuilt/dtb.img out/target/product/X6725B/dtb.img || echo "DTB not found in source, using wget as backup"
+        # ২. ডিটিবি ডাউনলোড (Release থেকে, নাম ঠিক করে)
+        wget -O $DEVICE_PATH/prebuilt/dtb.img "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/dtb.img"
         
-        if [ ! -f "out/target/product/X6725B/dtb.img" ]; then
-          wget -O out/target/product/X6725B/dtb.img "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/dtb.img"
-        fi
-
-        ls -l out/target/product/X6725B/
+        # ফাইলগুলো ঠিক আছে কি না চেক করা
+        ls -l $DEVICE_PATH/prebuilt/
         
     - name: Download Large Kernel
       run: |
