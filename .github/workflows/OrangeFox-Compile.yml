@@ -56,12 +56,22 @@ jobs:
         cd ${GITHUB_WORKSPACE}/PBRP
         git clone --depth=1 ${{ inputs.DEVICE_TREE }} -b main ${{ inputs.DEVICE_PATH }}
 
-    - name: Download Prebuilt Files
+    - name: Download and Prepare Prebuilt Files
       run: |
         cd $GITHUB_WORKSPACE/PBRP
         mkdir -p device/infinix/X6725B/prebuilt
+        
+        # ১. বড় কার্নেল ফাইলটি ডাউনলোড করা
         wget -O device/infinix/X6725B/prebuilt/kernel "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/kernel"
+        
+        # ২. DTB ফাইলটি যেন মিসিং না হয় তাই ফোর্স কপি করে সঠিক জায়গায় রাখা
+        # আপনার রিপোজিটরিতে থাকা dtb.img কে আমরা মেইন পাথে পাঠিয়ে দিচ্ছি
+        mkdir -p out/target/product/X6725B
+        cp device/infinix/X6725B/prebuilt/dtb.img out/target/product/X6725B/dtb.img
+        
+        # ৩. চেক করা ফাইলগুলো ঠিক জায়গায় আছে কি না
         ls -l device/infinix/X6725B/prebuilt/
+        ls -l out/target/product/X6725B/dtb.img/
         
     - name: Download Large Kernel
       run: |
