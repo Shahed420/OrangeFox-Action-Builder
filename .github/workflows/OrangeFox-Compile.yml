@@ -81,14 +81,14 @@ jobs:
         cd ${GITHUB_WORKSPACE}/PBRP
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
-        lunch twrp_${{ inputs.DEVICE_NAME }}-eng
+        lunch twrp_X6725B-eng
         
-        # মাস্টার হ্যাক: বিল্ড শুরুর ঠিক আগে ফাইলগুলো out ফোল্ডারে ঢুকিয়ে দেওয়া
-        mkdir -p out/target/product/${{ inputs.DEVICE_NAME }}
-        cp device/infinix/X6725B/prebuilt/kernel out/target/product/${{ inputs.DEVICE_NAME }}/kernel
-        cp device/infinix/X6725B/prebuilt/dtb.img out/target/product/${{ inputs.DEVICE_NAME }}/dtb.img
+        # ফাইলগুলো আবার কপি করে দেওয়া নিশ্চিত করা
+        mkdir -p out/target/product/X6725B
+        cp device/infinix/X6725B/prebuilt/kernel out/target/product/X6725B/kernel
+        cp device/infinix/X6725B/prebuilt/dtb.img out/target/product/X6725B/dtb.img
         
-        # এখন মেইন বিল্ড রান করা (clean কমান্ড বাদ দিয়েছি যাতে ফাইল না মোছে)
+        # বিল্ড শুরু (clean ছাড়া)
         mka pbrp -j$(nproc --all)
 
     - name: Upload Artifacts
