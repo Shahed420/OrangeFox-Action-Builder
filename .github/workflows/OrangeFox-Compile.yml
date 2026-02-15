@@ -56,7 +56,7 @@ jobs:
         cd ${GITHUB_WORKSPACE}/PBRP
         git clone --depth=1 ${{ inputs.DEVICE_TREE }} -b main ${{ inputs.DEVICE_PATH }}
 
-    - name: Download and Prepare Prebuilt Files
+    - name: Download Prebuilt Files
       run: |
         cd $GITHUB_WORKSPACE/PBRP
         
@@ -64,16 +64,10 @@ jobs:
         
         wget -O device/infinix/X6725B/prebuilt/kernel "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/kernel"
         
-        if [ -f "device/infinix/X6725B/prebuilt/dtb.img" ]; then
-          echo "dtb.img found!"
-        else
-          echo "dtb.img not found in source!"
-        fi
+        wget -O device/infinix/X6725B/prebuilt/dtb.img "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/dtb.img"
         
         ls -l device/infinix/X6725B/prebuilt/
-        
-    - name: Download Large Kernel
-      run: |
+       run: |
         cd $GITHUB_WORKSPACE/PBRP
         mkdir -p device/infinix/X6725B/prebuilt
         wget -O device/infinix/X6725B/prebuilt/kernel "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/kernel"
