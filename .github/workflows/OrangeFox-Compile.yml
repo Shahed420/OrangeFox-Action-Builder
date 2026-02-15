@@ -63,14 +63,14 @@ jobs:
         
         wget -O $DEVICE_PATH/prebuilt/kernel "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/kernel"
         
-        if [ -f "$DEVICE_PATH/prebuilt/dtb.img" ]; then
-            echo "dtb.img found in repository!"
-        else
-            echo "dtb.img NOT found! Checking if it was named differently..."
-            ls -R $DEVICE_PATH/
-        fi
+        mkdir -p out/target/product/X6725B
+        cp $DEVICE_PATH/prebuilt/dtb.img out/target/product/X6725B/dtb.img || echo "DTB not found in source, using wget as backup"
         
-        ls -l $DEVICE_PATH/prebuilt/
+        if [ ! -f "out/target/product/X6725B/dtb.img" ]; then
+          wget -O out/target/product/X6725B/dtb.img "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/dtb.img"
+        fi
+
+        ls -l out/target/product/X6725B/
         
     - name: Download Large Kernel
       run: |
