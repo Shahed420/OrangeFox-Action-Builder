@@ -56,20 +56,25 @@ jobs:
         cd ${GITHUB_WORKSPACE}/PBRP
         git clone --depth=1 ${{ inputs.DEVICE_TREE }} -b main ${{ inputs.DEVICE_PATH }}
 
-    - name: Download and Prepare Prebuilt Files
+    - name: Download and Force-Fix Prebuilt Files
       run: |
         cd ${GITHUB_WORKSPACE}/PBRP
-        mkdir -p ${{ inputs.DEVICE_PATH }}/prebuilt
+        DEVICE_PATH="${{ inputs.DEVICE_PATH }}"
+        OUT_PATH="out/target/product/${{ inputs.DEVICE_NAME }}"
         
-        # ১. কার্নেল ডাউনলোড
-        wget -O ${{ inputs.DEVICE_PATH }}/prebuilt/kernel "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/kernel"
-        chmod +x ${{ inputs.DEVICE_PATH }}/prebuilt/kernel
+        # ১. প্রিবিল্ট ফোল্ডার তৈরি ও ডাউনলোড
+        mkdir -p $DEVICE_PATH/prebuilt
+        wget -O $DEVICE_PATH/prebuilt/kernel "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/kernel"
+        wget -O $DEVICE_PATH/prebuilt/dtb.img "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/dtb.img"
         
-        # ২. ডিটিবি ডাউনলোড
-        wget -O ${{ inputs.DEVICE_PATH }}/prebuilt/dtb.img "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/dtb.img"
+        # ২. মাস্টার ট্রিক: নিঞ্জা যেখানে খুঁজছে সেখানে ম্যানুয়ালি ফাইলগুলো পাঠানো
+        mkdir -p $OUT_PATH
+        cp $DEVICE_PATH/prebuilt/kernel $OUT_PATH/kernel
+        cp $DEVICE_PATH/prebuilt/dtb.img $OUT_PATH/dtb.img
         
-        # ৩. কনফার্ম করা
-        ls -l ${{ inputs.DEVICE_PATH }}/prebuilt/
+        # ৩. ভেরিফাই করা
+        echo "Files in Out Folder:"
+        ls -l $OUT_PATH/
 
     - name: Building PBRP
       run: |
