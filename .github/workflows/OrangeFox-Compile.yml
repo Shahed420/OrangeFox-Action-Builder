@@ -48,7 +48,7 @@ jobs:
         cd ${GITHUB_WORKSPACE}/PBRP
         git config --global user.name "${{ github.actor }}"
         git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
-        repo init --depth=1 -u https://github.com/PitchBlackRecoveryProject/manifest_pb.git -b android-12.1
+        repo init --depth=1 -u https://github.com/PitchBlackRecoveryProject/manifest_pb.git -b ${{ inputs.MANIFEST_BRANCH }}
         repo sync -j$(nproc --all) --force-sync --no-tags --no-clone-bundle --prune --optimized-fetch
 
     - name: Clone Device Tree
@@ -56,32 +56,24 @@ jobs:
         cd ${GITHUB_WORKSPACE}/PBRP
         git clone --depth=1 ${{ inputs.DEVICE_TREE }} -b main ${{ inputs.DEVICE_PATH }}
 
-    - name: Download Prebuilt Files
+    - name: Download and Prepare Prebuilt Files
       run: |
-        cd $GITHUB_WORKSPACE/PBRP
+        cd ${GITHUB_WORKSPACE}/PBRP
+        mkdir -p ${{ inputs.DEVICE_PATH }}/prebuilt
         
-        mkdir -p device/infinix/X6725B/prebuilt
+        # ১. কার্নেল ডাউনলোড
+        wget -O ${{ inputs.DEVICE_PATH }}/prebuilt/kernel "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/kernel"
+        chmod +x ${{ inputs.DEVICE_PATH }}/prebuilt/kernel
         
-        wget -O device/infinix/X6725B/prebuilt/kernel "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/kernel"
+        # ২. ডিটিবি ডাউনলোড
+        wget -O ${{ inputs.DEVICE_PATH }}/prebuilt/dtb.img "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/dtb.img"
         
-        wget -O device/infinix/X6725B/prebuilt/dtb.img "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/dtb.img"
-        
-        ls -l device/infinix/X6725B/prebuilt/
-       run: |
-        cd $GITHUB_WORKSPACE/PBRP
-        mkdir -p device/infinix/X6725B/prebuilt
-        wget -O device/infinix/X6725B/prebuilt/kernel "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/kernel"
-        chmod +x device/infinix/X6725B/prebuilt/kernel
-        ls -R device/infinix/X6725B/prebuilt/
-        
+        # ৩. কনফার্ম করা
+        ls -l ${{ inputs.DEVICE_PATH }}/prebuilt/
+
     - name: Building PBRP
       run: |
         cd ${GITHUB_WORKSPACE}/PBRP
-        if [ ! -f "build/envsetup.sh" ]; then
-          echo "ERROR: Source code not downloaded correctly!"
-          ls -a
-          exit 1
-        fi
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
         lunch twrp_${{ inputs.DEVICE_NAME }}-eng
@@ -91,7 +83,7 @@ jobs:
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: PBRP-Build
+        name: PBRP-Build-${{ inputs.DEVICE_NAME }}
         path: |
-          PBRP/out/target/product/X6725B/PBRP*.zip
-          PBRP/out/target/product/X6725B/recovery.img
+          PBRP/out/target/product/${{ inputs.DEVICE_NAME }}/PBRP*.zip
+          PBRP/out/target/product/${{ inputs.DEVICE_NAME }}/recovery.img
