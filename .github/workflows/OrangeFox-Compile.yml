@@ -58,18 +58,19 @@ jobs:
 
     - name: Download and Prepare Prebuilt Files
       run: |
-        DEVICE_PATH="device/infinix/X6725B"
+        cd $GITHUB_WORKSPACE/PBRP
         
-        wget -O $DEVICE_PATH/prebuilt/kernel "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/kernel"
+        mkdir -p device/infinix/X6725B/prebuilt
         
-        if [ -f "$DEVICE_PATH/prebuilt/dtb.img" ]; then
-          echo "dtb.img already exists in repository."
+        wget -O device/infinix/X6725B/prebuilt/kernel "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/kernel"
+        
+        if [ -f "device/infinix/X6725B/prebuilt/dtb.img" ]; then
+          echo "dtb.img found!"
         else
-          echo "dtb.img not found! Let's check where it is..."
-          find $DEVICE_PATH -name "dtb.img"
+          echo "dtb.img not found in source!"
         fi
         
-        ls -l $DEVICE_PATH/prebuilt/
+        ls -l device/infinix/X6725B/prebuilt/
         
     - name: Download Large Kernel
       run: |
