@@ -83,14 +83,16 @@ jobs:
         export ALLOW_MISSING_DEPENDENCIES=true
         lunch twrp_X6725B-eng
         
-        # ফাইলগুলো আবার কপি করে দেওয়া নিশ্চিত করা
+        # ১. জোর করে BoardConfig-এ সাইজ আপডেট করা (যাতে ক্যাশ কোনো বাধা না দেয়)
+        sed -i 's/BOARD_BOOTIMAGE_PARTITION_SIZE := .*/BOARD_BOOTIMAGE_PARTITION_SIZE := 104857600/g' device/infinix/X6725B/BoardConfig.mk
+        
+        # ২. ফাইলগুলো কপি করে দেওয়া
         mkdir -p out/target/product/X6725B
         cp device/infinix/X6725B/prebuilt/kernel out/target/product/X6725B/kernel
         cp device/infinix/X6725B/prebuilt/dtb.img out/target/product/X6725B/dtb.img
         
-        # বিল্ড শুরু (clean ছাড়া)
+        # ৩. বিল্ড শুরু
         mka pbrp -j$(nproc --all)
-
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
