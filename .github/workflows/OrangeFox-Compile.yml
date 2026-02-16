@@ -93,11 +93,11 @@ jobs:
         
         # ৩. বিল্ড শুরু
         mka pbrp -j$(nproc --all)
+        
         - name: Upload Artifacts
-          uses: actions/upload-artifact@v4
-          with:
-          name: PBRP-Build-${{ inputs.DEVICE_NAME }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: PBRP-Build-Infinix-X6725B
           path: |
-          PBRP/out/target/product/${{ inputs.DEVICE_NAME }}/PBRP*.zip
-          PBRP/out/target/product/${{ inputs.DEVICE_NAME }}/recovery.img
-          PBRP/out/target/product/${{ inputs.DEVICE_NAME }}/boot.img
+            PBRP/out/target/product/X6725B/*.zip
+            PBRP/out/target/product/X6725B/recovery.img
