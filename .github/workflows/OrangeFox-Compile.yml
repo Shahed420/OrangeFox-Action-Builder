@@ -94,8 +94,14 @@ jobs:
         # ৩. বিল্ড শুরু
         mka pbrp -j$(nproc --all)
         
-    - name: Upload Everything
+    - name: Fix Permissions and Upload
+      run: |
+        sudo chmod -R 777 PBRP/out/target/product/X6725B/
+        
+    - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: All-Build-Files
-        path: PBRP/out/target/product/X6725B/
+        name: PBRP-Complete-Package
+        path: |
+          PBRP/out/target/product/X6725B/*.zip
+          PBRP/out/target/product/X6725B/*.img
