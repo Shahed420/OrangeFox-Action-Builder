@@ -37,7 +37,7 @@ jobs:
         mka vendorbootimage
 
     - name: Upload Result
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4  # এখানে v3 এর জায়গায় v4 হবে
       with:
         name: TWRP-Image
-        path: ~/twrp/out/target/product/generic/vendor_boot.img
+        path: ~/twrp/out/target/product/X6725B/vendor_boot.img # আপনার ডিভাইসের নাম অনুযায়ী পাথ চেক করে নিন
