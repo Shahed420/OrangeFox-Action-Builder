@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04  # Stable version for building
+    runs-on: ubuntu-latest # Stable version for building
 
     steps:
     - name: Checkout Repository
