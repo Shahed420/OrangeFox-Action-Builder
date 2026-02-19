@@ -1,107 +1,43 @@
-name: PBRP - Build
+name: TWRP Build for Unisoc
 
 on:
   workflow_dispatch:
-    inputs:
-      MANIFEST_BRANCH:
-        description: 'PBRP Manifest Branch'
-        required: true
-        default: 'android-12.1'
-      DEVICE_TREE:
-        description: 'Device Tree URL'
-        required: true
-        default: 'https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree.git'
-      DEVICE_PATH:
-        description: 'Device Path'
-        required: true
-        default: 'device/infinix/X6725B'
-      DEVICE_NAME:
-        description: 'Device Codename'
-        required: true
-        default: 'X6725B'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3
 
-    - name: Clean-up Environment
-      uses: rokibhasansagar/slimhub_actions@main
-
-    - name: Set Swap Space
-      uses: pierotofy/set-swap-space@master
-      with:
-        swap-size-gb: 24
-
-    - name: Install Repo
+    - name: Cleanup and Setup Environment
       run: |
-        mkdir -p ~/bin
-        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
-        chmod a+x ~/bin/repo
-        sudo ln -sf ~/bin/repo /usr/bin/repo
-    
-    - name: Sync Manifest
-      run: |
-        mkdir -p ${GITHUB_WORKSPACE}/PBRP
-        cd ${GITHUB_WORKSPACE}/PBRP
-        git config --global user.name "${{ github.actor }}"
-        git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
-        repo init --depth=1 -u https://github.com/PitchBlackRecoveryProject/manifest_pb.git -b ${{ inputs.MANIFEST_BRANCH }}
-        repo sync -j$(nproc --all) --force-sync --no-tags --no-clone-bundle --prune --optimized-fetch
-
-    - name: Clone Device Tree
-      run: |
-        cd ${GITHUB_WORKSPACE}/PBRP
-        git clone --depth=1 ${{ inputs.DEVICE_TREE }} -b main ${{ inputs.DEVICE_PATH }}
-
-    - name: Download and Force-Fix Prebuilt Files
-      run: |
-        cd ${GITHUB_WORKSPACE}/PBRP
-        DEVICE_PATH="${{ inputs.DEVICE_PATH }}"
-        OUT_PATH="out/target/product/${{ inputs.DEVICE_NAME }}"
+        sudo apt-get update
+        sudo apt-get install -y bc build-essential zip curl libstdc++6 git wget python3
         
-        # ১. প্রিবিল্ট ফোল্ডার তৈরি ও ডাউনলোড
-        mkdir -p $DEVICE_PATH/prebuilt
-        wget -O $DEVICE_PATH/prebuilt/kernel "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/kernel"
-        wget -O $DEVICE_PATH/prebuilt/dtb.img "https://github.com/Shahed420/Infinix_X6725B_TWRP_Tree/releases/download/v1/dtb.img"
-        
-        # ২. মাস্টার ট্রিক: নিঞ্জা যেখানে খুঁজছে সেখানে ম্যানুয়ালি ফাইলগুলো পাঠানো
-        mkdir -p $OUT_PATH
-        cp $DEVICE_PATH/prebuilt/kernel $OUT_PATH/kernel
-        cp $DEVICE_PATH/prebuilt/dtb.img $OUT_PATH/dtb.img
-        
-        # ৩. ভেরিফাই করা
-        echo "Files in Out Folder:"
-        ls -l $OUT_PATH/
-
-    - name: Building PBRP
+    - name: Sync TWRP Minimal Manifest
       run: |
-        cd ${GITHUB_WORKSPACE}/PBRP
+        mkdir ~/twrp
+        cd ~/twrp
+        git config --global user.name "Your Name"
+        git config --global user.email "you@example.com"
+        repo init --depth=1 -u https://github.com/minimal-twrp/manifest.git -b twrp-12.1
+        repo sync -j$(nproc --all)
+
+    - name: Copy Device Tree
+      run: |
+        cp -r ${{ github.workspace }}/device ~/twrp/
+
+    - name: Building vendor_boot
+      run: |
+        cd ~/twrp
         source build/envsetup.sh
+        lunch twrp_vendor_boot-eng
         export ALLOW_MISSING_DEPENDENCIES=true
-        lunch twrp_X6725B-eng
-        
-        # ১. জোর করে BoardConfig-এ সাইজ আপডেট করা
-        sed -i 's/BOARD_BOOTIMAGE_PARTITION_SIZE := .*/BOARD_BOOTIMAGE_PARTITION_SIZE := 104857600/g' device/infinix/X6725B/BoardConfig.mk
-        
-        # ২. ফাইলগুলো কপি করে দেওয়া
-        mkdir -p out/target/product/X6725B
-        cp device/infinix/X6725B/prebuilt/kernel out/target/product/X6725B/kernel
-        cp device/infinix/X6725B/prebuilt/dtb.img out/target/product/X6725B/dtb.img
-        
-        # ৩. বিল্ড শুরু
-        mka pbrp -j$(nproc --all)
-        
-    - name: Fix Permissions and Upload
-      run: |
-        sudo chmod -R 777 PBRP/out/target/product/X6725B/
-        
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
+        mka vendorbootimage
+
+    - name: Upload Result
+      uses: actions/upload-artifact@v3
       with:
-        name: PBRP-Complete-Package
-        path: |
-          PBRP/out/target/product/X6725B/*.zip
-          PBRP/out/target/product/X6725B/*.img
+        name: TWRP-Image
+        path: ~/twrp/out/target/product/generic/vendor_boot.img
