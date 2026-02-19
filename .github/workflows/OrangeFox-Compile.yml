@@ -2,57 +2,326 @@ name: TWRP Build for Unisoc
 
 on:
   workflow_dispatch:
+    inputs:
+      device:
+        description: 'Device codename (e.g., X6725B)'
+        required: true
+        default: 'X6725B'
+      branch:
+        description: 'TWRP branch'
+        required: true
+        default: 'twrp-12.1'
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-    - name: Cleanup and Setup Environment
+    # ========== Environment Setup ==========
+    - name: Setup Build Environment
       run: |
-        sudo apt-get update
-        sudo apt-get install -y bc build-essential zip curl libstdc++6 git wget python3
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq \
+          bc \
+          bison \
+          build-essential \
+          ccache \
+          curl \
+          flex \
+          g++-multilib \
+          gcc-multilib \
+          git \
+          git-lfs \
+          gnupg \
+          gperf \
+          imagemagick \
+          lib32ncurses5-dev \
+          lib32readline-dev \
+          lib32z1-dev \
+          liblz4-tool \
+          libncurses5 \
+          libncurses5-dev \
+          libsdl1.2-dev \
+          libssl-dev \
+          libxml2 \
+          libxml2-utils \
+          lzop \
+          pngcrush \
+          rsync \
+          schedtool \
+          squashfs-tools \
+          xsltproc \
+          zip \
+          zlib1g-dev \
+          python3 \
+          python3-pip \
+          openjdk-11-jdk \
+          dos2unix \
+          android-sdk-libsparse-utils
+        
+        # Git LFS setup
+        git lfs install --system --skip-repo
+        
+        # Python packages
+        pip3 install --upgrade pip
+        pip3 install pycrypto lz4 zstandard
+        
+        echo "✅ Build environment setup completed"
 
+    # ========== Repo Tool Installation ==========
     - name: Install Repo Tool
       run: |
         mkdir -p ~/bin
-        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+        curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
         chmod a+x ~/bin/repo
-        sudo ln -sf ~/bin/repo /usr/bin/repo
+        echo "$HOME/bin" >> $GITHUB_PATH
+        echo "✅ Repo tool installed"
 
-    - name: Sync TWRP Minimal Manifest
+    # ========== Git Configuration ==========
+    - name: Configure Git
       run: |
-        # গিট কনফিগারেশন যা অথেন্টিকেশন প্রম্পট পুরোপুরি বন্ধ করবে
-        git config --global user.name "GitHub Action"
-        git config --global user.email "action@github.com"
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git config --global color.ui false
+        git config --global core.autocrlf input
+        git config --global core.longpaths true
+        git config --global http.postBuffer 524288000
+        git config --global https.postBuffer 524288000
+        git config --global http.lowSpeedLimit 0
+        git config --global http.lowSpeedTime 999999
         
-        # ডিরেক্টরি তৈরি
-        mkdir ~/twrp
+        # Disable interactive authentication
+        git config --global core.askpass ""
+        echo "✅ Git configured"
+
+    # ========== GitHub Authentication ==========
+    - name: Setup GitHub Token Authentication
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      run: |
+        if [ -z "$GH_TOKEN" ]; then
+          echo "❌ ERROR: GH_TOKEN secret is not set!"
+          echo "Please add your GitHub Personal Access Token to repository secrets as GH_TOKEN"
+          echo ""
+          echo "How to create a token:"
+          echo "1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)"
+          echo "2. Generate new token with 'repo' scope"
+          echo "3. Add it to your repository secrets as GH_TOKEN"
+          exit 1
+        fi
+        
+        # Setup git credential helper
+        git config --global credential.helper store
+        echo "https://x-access-token:${GH_TOKEN}@github.com" > ~/.git-credentials
+        chmod 600 ~/.git-credentials
+        
+        # Test authentication
+        echo "Testing GitHub authentication..."
+        if git ls-remote https://x-access-token:${GH_TOKEN}@github.com/minimal-twrp/manifest.git &>/dev/null; then
+          echo "✅ GitHub authentication successful!"
+        else
+          echo "⚠️ Warning: Could not access minimal-twrp/manifest. Token may need more permissions."
+        fi
+
+    # ========== TWRP Source Sync ==========
+    - name: Initialize TWRP Manifest
+      run: |
+        # Create working directory
+        mkdir -p ~/twrp
         cd ~/twrp
         
-        # এখানে আমরা 'minimal-twrp' এর বদলে বিকল্প একটি স্টেবল লিঙ্ক ব্যবহার করছি
-        # এবং https এর বদলে সরাসরি লিঙ্ক প্রসেস করছি
-        repo init --depth=1 -u https://github.com/minimal-twrp/manifest.git -b twrp-12.1 --git-lfs
+        echo "📥 Initializing TWRP manifest..."
         
-        # সিঙ্ক করার সময় অথেন্টিকেশন এড়িয়ে যাওয়ার জন্য
-        repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle --optimized-fetch --prune
+        # Initialize with authentication token
+        repo init \
+          --depth=1 \
+          -u https://x-access-token:${GH_TOKEN}@github.com/minimal-twrp/manifest.git \
+          -b ${{ github.event.inputs.branch || 'twrp-12.1' }} \
+          --git-lfs
         
-    - name: Copy Device Tree
-      run: |
-        cp -r ${{ github.workspace }}/device ~/twrp/
+        echo "✅ Manifest initialized successfully"
 
-    - name: Building vendor_boot
+    - name: Sync TWRP Source
       run: |
         cd ~/twrp
+        
+        echo "🔄 Syncing TWRP source (this will take 15-20 minutes)..."
+        
+        # Sync with optimized settings
+        repo sync \
+          -c \
+          -j$(nproc) \
+          --force-sync \
+          --no-clone-bundle \
+          --no-tags \
+          --optimized-fetch \
+          --prune \
+          --retry-fetches=3
+        
+        if [ $? -eq 0 ]; then
+          echo "✅ Source sync completed successfully"
+        else
+          echo "⚠️ First sync had issues, retrying with reduced jobs..."
+          repo sync -c -j4 --force-sync --no-tags
+        fi
+
+    # ========== Device Tree Setup ==========
+    - name: Setup Device Tree
+      run: |
+        cd ~/twrp
+        
+        # Create device directory
+        mkdir -p device/unisoc/${{ github.event.inputs.device }}
+        
+        # Copy device tree from workspace
+        if [ -d "${{ github.workspace }}/device" ]; then
+          echo "📱 Copying device tree from repository..."
+          cp -rv ${{ github.workspace }}/device/* device/unisoc/${{ github.event.inputs.device }}/
+        else
+          echo "⚠️ No device tree found in repository!"
+          echo "Please ensure your device tree is in the 'device' folder of your repository"
+          exit 1
+        fi
+        
+        # Verify device tree
+        echo "Device tree structure:"
+        ls -la device/unisoc/${{ github.event.inputs.device }}/
+        
+        # Check for Android.mk or Android.bp
+        if [ -f "device/unisoc/${{ github.event.inputs.device }}/Android.mk" ] || [ -f "device/unisoc/${{ github.event.inputs.device }}/Android.bp" ]; then
+          echo "✅ Device tree Android.mk/bp found"
+        else
+          echo "⚠️ Warning: No Android.mk or Android.bp found in device tree"
+        fi
+
+    # ========== Patch Vendor_boot Support ==========
+    - name: Apply Unisoc Vendor_boot Patches
+      run: |
+        cd ~/twrp
+        
+        echo "🔧 Applying Unisoc vendor_boot patches..."
+        
+        # Check if vendor_boot is supported
+        if [ -f "bootable/recovery/vendor_boot/Android.mk" ]; then
+          echo "✅ Vendor_boot support found"
+        else
+          echo "⚠️ Vendor_boot support not found in source"
+        fi
+        
+        # Create device vendor_boot config if needed
+        mkdir -p device/unisoc/${{ github.event.inputs.device }}/recovery
+        
+        # Add vendor_boot flags
+        cat > device/unisoc/${{ github.event.inputs.device }}/BoardConfig.mk << 'EOF'
+# Vendor boot configuration
+BOARD_USES_RECOVERY_AS_BOOT :=
+BOARD_USES_VENDOR_BOOT := true
+BOARD_BOOT_HEADER_VERSION := 3
+BOARD_KERNEL_BASE := 0x00000000
+BOARD_KERNEL_OFFSET := 0x00008000
+BOARD_KERNEL_PAGESIZE := 2048
+BOARD_RAMDISK_OFFSET := 0x01000000
+BOARD_TAGS_OFFSET := 0x00000100
+BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE := 67108864
+BOARD_VENDOR_BOOTIMAGE_FILE_SYSTEM_TYPE := vendor_boot
+BOARD_KERNEL_CMDLINE := console=ttyS1,115200n8 buildvariant=userdebug
+TARGET_NO_KERNEL := false
+TARGET_NO_RECOVERY := false
+TARGET_PREBUILT_KERNEL := device/unisoc/$(TARGET_DEVICE)/kernel
+EOF
+
+    # ========== Build Vendor_boot ==========
+    - name: Build TWRP Vendor_boot
+      run: |
+        cd ~/twrp
+        
+        echo "🏗️ Starting TWRP vendor_boot build for ${{ github.event.inputs.device }}..."
+        
+        # Set build environment
         source build/envsetup.sh
-        lunch twrp_vendor_boot-eng
+        
+        # Lunch target
+        DEVICE="${{ github.event.inputs.device }}"
+        lunch twrp_${DEVICE}-eng
+        
+        if [ $? -ne 0 ]; then
+          echo "❌ Lunch failed! Trying alternative..."
+          export TARGET_DEVICE=${DEVICE}
+          lunch twrp_${DEVICE}-userdebug
+        fi
+        
+        # Export build variables
         export ALLOW_MISSING_DEPENDENCIES=true
-        mka vendorbootimage
+        export LC_ALL=C
+        export USE_CCACHE=1
+        export CCACHE_DIR=/tmp/ccache
+        ccache -M 20G
+        
+        # Clean previous build
+        rm -rf out/target/product/${DEVICE}
+        
+        # Build vendor_boot image
+        echo "🔨 Building vendor_boot image..."
+        mka vendorbootimage -j$(nproc)
+        
+        if [ $? -eq 0 ]; then
+          echo "✅ Build completed successfully!"
+        else
+          echo "❌ Build failed! Trying with single thread..."
+          mka vendorbootimage -j1
+        fi
 
-    - name: Upload Result
-      uses: actions/upload-artifact@v4  # এখানে v3 এর জায়গায় v4 হবে
+    # ========== List Output Files ==========
+    - name: List Built Files
+      if: always()
+      run: |
+        cd ~/twrp
+        DEVICE="${{ github.event.inputs.device }}"
+        
+        echo "📂 Built files:"
+        find out/target/product/${DEVICE} -name "*.img" -type f 2>/dev/null || echo "No IMG files found"
+        
+        # Create output directory
+        mkdir -p ${{ github.workspace }}/output
+
+    # ========== Upload Recovery Images ==========
+    - name: Upload TWRP Images
+      if: success() || failure()
+      uses: actions/upload-artifact@v4
       with:
-        name: TWRP-Image
-        path: ~/twrp/out/target/product/X6725B/vendor_boot.img # আপনার ডিভাইসের নাম অনুযায়ী পাথ চেক করে নিন
+        name: TWRP-${{ github.event.inputs.device }}-${{ github.run_number }}
+        path: |
+          ~/twrp/out/target/product/${{ github.event.inputs.device }}/vendor_boot.img
+          ~/twrp/out/target/product/${{ github.event.inputs.device }}/recovery.img
+          ~/twrp/out/target/product/${{ github.event.inputs.device }}/boot.img
+          ~/twrp/out/target/product/${{ github.event.inputs.device }}/ramdisk.img
+        if-no-files-found: warn
+        retention-days: 30
+
+    # ========== Upload Build Logs ==========
+    - name: Upload Build Logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-logs-${{ github.event.inputs.device }}
+        path: |
+          ~/twrp/build.log
+          ~/twrp/out/build.log
+          ~/twrp/out/error.log
+        if-no-files-found: ignore
+        retention-days: 7
+
+    # ========== Upload Complete Out Folder ==========
+    - name: Upload Complete Out Folder (if needed)
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: complete-out-folder-${{ github.event.inputs.device }}
+        path: ~/twrp/out/
+        if-no-files-found: ignore
+        retention-days: 7
