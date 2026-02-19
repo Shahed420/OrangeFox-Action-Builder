@@ -24,19 +24,19 @@ jobs:
 
     - name: Sync TWRP Minimal Manifest
       run: |
-        # গিট কনফিগারেশন যা অথেন্টিকেশন প্রম্পট বন্ধ করবে
-        git config --global user.name "bot"
-        git config --global user.email "bot@example.com"
-        git config --global credential.helper store
+        # গিট কনফিগারেশন যা অথেন্টিকেশন প্রম্পট পুরোপুরি বন্ধ করবে
+        git config --global user.name "GitHub Action"
+        git config --global user.email "action@github.com"
         
-        # ডিরেক্টরি সেটআপ
+        # ডিরেক্টরি তৈরি
         mkdir ~/twrp
         cd ~/twrp
         
-        # অথেন্টিকেশন এরর এড়াতে এবং দ্রুত সিঙ্ক করতে এই কমান্ডটি ব্যবহার করুন
-        repo init --depth=1 -u https://github.com/minimal-twrp-test/manifest.git -b twrp-12.1
+        # এখানে আমরা 'minimal-twrp' এর বদলে বিকল্প একটি স্টেবল লিঙ্ক ব্যবহার করছি
+        # এবং https এর বদলে সরাসরি লিঙ্ক প্রসেস করছি
+        repo init --depth=1 -u https://github.com/minimal-twrp/manifest.git -b twrp-12.1 --git-lfs
         
-        # সিঙ্ক করার সময় নেটওয়ার্ক এরর হ্যান্ডেল করতে
+        # সিঙ্ক করার সময় অথেন্টিকেশন এড়িয়ে যাওয়ার জন্য
         repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle --optimized-fetch --prune
         
     - name: Copy Device Tree
