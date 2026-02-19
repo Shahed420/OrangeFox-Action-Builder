@@ -24,18 +24,24 @@ jobs:
         git config --global user.email "bot@example.com"
         git config --global color.ui false
 
-    - name: Sync OrangeFox/TWRP Manifest
+    - name: Sync TWRP/OrangeFox Manifest
       run: |
         mkdir ~/twrp
         cd ~/twrp
+        
+        # গিটকে বাধ্য করা যেন সে https এর বদলে git প্রোটোকল ব্যবহার করে (অথেন্টিকেশন এড়াতে)
+        git config --global url."git://github.com/".insteadOf "https://github.com/"
+        git config --global url."git://gitlab.com/".insteadOf "https://gitlab.com/"
+        
         git config --global user.name "bot"
         git config --global user.email "bot@example.com"
         
-        # এখানে আমরা OrangeFox এর সোর্স ব্যবহার করছি যা অনেক বেশি স্টেবল
-        repo init --depth=1 -u https://gitlab.com/OrangeFox/Manifest.git -b fox_12.1
+        # সোর্স ইনিট (আমরা সরাসরি একটি স্টেবল মিরর ব্যবহার করছি)
+        repo init --depth=1 -u https://github.com/minimal-twrp/manifest.git -b twrp-12.1
         
-        # সিঙ্ক করার সময় নেটওয়ার্ক ফেইলিয়র এড়াতে বার বার ট্রাই করার কমান্ড
-        repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle
+        # সিঙ্ক করার সময় নেটওয়ার্ক ফেইলিয়র এড়াতে এবং অথেন্টিকেশন বাইপাস করতে
+        repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle --optimized-fetch --prune
+        
     - name: Copy Device Tree
       run: |
         # আপনার রিপোজিটরির device ফোল্ডারটি সোর্সে কপি করা
