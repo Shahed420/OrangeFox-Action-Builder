@@ -18,28 +18,30 @@ jobs:
         chmod a+x ~/bin/repo
         sudo ln -sf ~/bin/repo /usr/bin/repo
 
-    - name: Sync Source
+    - name: Sync TWRP Source
       run: |
+        # গিটহাবের সব অটো-হেডার এবং টোকেন মুছে ফেলা (অত্যন্ত জরুরি)
+        git config --global --unset-all http.https://github.com/.extraheader || true
+        
+        # নতুন ফ্রেশ কনফিগারেশন
+        git config --global user.name "Builder"
+        git config --global user.email "builder@example.com"
+        
+        # গিটহাবকে বলা যেন সে কোনো নির্দিষ্ট ডোমেইনের জন্য টোকেন না পাঠায়
+        git config --global url."https://github.com/".insteadOf "git@github.com:"
+        git config --global url."https://github.com/".insteadOf "git://github.com/"
+        
+        # ডিরেক্টরি তৈরি
         mkdir ~/twrp
         cd ~/twrp
         
-        # গিটহাবের সেই সব কনফিগারেশন মুছে ফেলা যা এরর তৈরি করছে
-        git config --global --unset-all http.https://github.com/.extraheader || true
-        git config --global --unset-all core.sshCommand || true
-        
-        # ফ্রেশ কনফিগারেশন সেট করা
-        git config --global user.name "bot"
-        git config --global user.email "bot@example.com"
-        git config --global credential.helper ""
-        
-        # সরাসরি HTTP দিয়ে ট্রাই করা (পাসওয়ার্ড চাইলে যেন এরর দেয়, হ্যাং না হয়)
+        # সরাসরি সোর্স ডাউনলোড (অথেন্টিকেশন এরর এড়াতে)
         export GIT_TERMINAL_PROMPT=0
+        repo init --depth=1 -u https://github.com/minimal-twrp/manifest.git -b twrp-12.1 --no-repo-verify || repo init --depth=1 -u https://github.com/minimal-twrp/manifest.git -b twrp-12.1
         
-        # এবার সোর্স ইনিট
-        repo init --depth=1 -u https://github.com/minimal-twrp/manifest.git -b twrp-12.1
+        # সিঙ্ক শুরু
+        repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle --optimized-fetch
         
-        # সিঙ্ক কমান্ড
-        repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle
     - name: Setup Device Tree
       run: |
         # আপনার ডিভাইস ট্রি সরাসরি সোর্সে ক্লোন করা
