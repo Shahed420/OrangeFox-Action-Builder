@@ -18,30 +18,22 @@ jobs:
         chmod a+x ~/bin/repo
         sudo ln -sf ~/bin/repo /usr/bin/repo
 
-    - name: Sync TWRP Source
+    - name: Sync TWRP Source (Direct Method)
       run: |
-        # গিটহাবের সব অটো-হেডার এবং টোকেন মুছে ফেলা (অত্যন্ত জরুরি)
-        git config --global --unset-all http.https://github.com/.extraheader || true
-        
-        # নতুন ফ্রেশ কনফিগারেশন
-        git config --global user.name "Builder"
-        git config --global user.email "builder@example.com"
-        
-        # গিটহাবকে বলা যেন সে কোনো নির্দিষ্ট ডোমেইনের জন্য টোকেন না পাঠায়
-        git config --global url."https://github.com/".insteadOf "git@github.com:"
-        git config --global url."https://github.com/".insteadOf "git://github.com/"
-        
-        # ডিরেক্টরি তৈরি
         mkdir ~/twrp
         cd ~/twrp
         
-        # সরাসরি সোর্স ডাউনলোড (অথেন্টিকেশন এরর এড়াতে)
-        export GIT_TERMINAL_PROMPT=0
-        repo init --depth=1 -u https://github.com/minimal-twrp/manifest.git -b twrp-12.1 --no-repo-verify || repo init --depth=1 -u https://github.com/minimal-twrp/manifest.git -b twrp-12.1
+        # গিটহাবের ডিফল্ট পারমিশন এরর এড়াতে
+        git config --global user.name "bot"
+        git config --global user.email "bot@example.com"
         
-        # সিঙ্ক শুরু
-        repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle --optimized-fetch
+        # Repo টুল কাজ না করলে আমরা সরাসরি ম্যানিফেস্ট ক্লোন করে ম্যানুয়ালি সিঙ্ক করবো
+        # এটি গিটহাবের ইন্টারনাল অথেন্টিকেশন বাইপাস করবে
+        git clone --depth=1 https://github.com/minimal-twrp/manifest.git -b twrp-12.1 .repo/manifests
+        cp .repo/manifests/default.xml .repo/manifest.xml
         
+        # সরাসরি সোর্স ডাউনলোড শুরু
+        repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle
     - name: Setup Device Tree
       run: |
         # আপনার ডিভাইস ট্রি সরাসরি সোর্সে ক্লোন করা
