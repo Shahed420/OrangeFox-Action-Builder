@@ -22,22 +22,12 @@ jobs:
       run: |
         mkdir ~/twrp
         cd ~/twrp
-        
-        # সব আগের কনফিগারেশন মুছে ফেলা
-        git config --global --unset-all url."https://ghproxy.com/https://github.com/".insteadOf || true
-        
-        # ফ্রেশ গিট কনফিগার
         git config --global user.name "Builder"
         git config --global user.email "builder@example.com"
         
-        # ম্যাজিক কমান্ড: গিটহাবকে বলা যেন সে অথেন্টিকেশন ছাড়াই ট্রাই করে
-        # এবং কোনো অতিরিক্ত হেডার (টোকেন) না পাঠায়
-        git config --global http.https://github.com/.extraheader ""
+        # আপনার সেভ করা MY_TOKEN ব্যবহার করে সিঙ্ক করা
+        repo init --depth=1 -u https://${{ secrets.MY_TOKEN }}@github.com/minimal-twrp/manifest.git -b twrp-12.1
         
-        # Repo ইনিট (এখানে আমরা সরাসরি মূল লিঙ্ক ব্যবহার করছি)
-        repo init --depth=1 -u https://github.com/minimal-twrp/manifest.git -b twrp-12.1 --no-repo-verify
-        
-        # সিঙ্ক কমান্ড
         repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle
         
     - name: Setup Device Tree
