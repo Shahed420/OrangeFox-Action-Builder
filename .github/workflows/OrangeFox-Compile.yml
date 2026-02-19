@@ -45,7 +45,8 @@ jobs:
       run: |
         cd ~/twrp
         source build/envsetup.sh
-        # আপনার ট্রি অনুযায়ী lunch কমান্ড
+        # আপনার ট্রি অনুযায়ী lunch কমান্
+        export ALLOW_MISSING_DEPENDENCIES=true
         lunch twrp_X6725B-eng || lunch twrp_vendor_boot-eng
         export ALLOW_MISSING_DEPENDENCIES=true
         mka vendorbootimage -j$(nproc --all)
