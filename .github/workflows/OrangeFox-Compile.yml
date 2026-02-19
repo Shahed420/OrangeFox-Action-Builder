@@ -18,23 +18,24 @@ jobs:
         chmod a+x ~/bin/repo
         sudo ln -sf ~/bin/repo /usr/bin/repo
 
-    - name: Sync TWRP Source (Anti-Block Method)
+    - name: Sync TWRP Source
       run: |
         mkdir ~/twrp
         cd ~/twrp
         
-        # গিটহাবের সেই বিষাক্ত কনফিগারেশন ডিলিট করা
-        git config --global --unset-all http.https://github.com/.extraheader || true
+        # সব আগের কনফিগারেশন মুছে ফেলা
+        git config --global --unset-all url."https://ghproxy.com/https://github.com/".insteadOf || true
         
-        # গিটহাবকে বাধ্য করা যেন সে অন্য একটি মিরর সাইট ব্যবহার করে যা ব্লকড নয়
-        # আমরা সরাসরি 'github.com' এর বদলে 'ghproxy.com' বা সরাসরি আইপি ব্যবহারের মতো ট্রিক করছি
-        git config --global url."https://ghproxy.com/https://github.com/".insteadOf "https://github.com/"
+        # ফ্রেশ গিট কনফিগার
+        git config --global user.name "Builder"
+        git config --global user.email "builder@example.com"
         
-        git config --global user.name "bot"
-        git config --global user.email "bot@example.com"
+        # ম্যাজিক কমান্ড: গিটহাবকে বলা যেন সে অথেন্টিকেশন ছাড়াই ট্রাই করে
+        # এবং কোনো অতিরিক্ত হেডার (টোকেন) না পাঠায়
+        git config --global http.https://github.com/.extraheader ""
         
-        # এবার সোর্স ইনিট (মিরর প্রক্সি দিয়ে)
-        repo init --depth=1 -u https://github.com/minimal-twrp/manifest.git -b twrp-12.1
+        # Repo ইনিট (এখানে আমরা সরাসরি মূল লিঙ্ক ব্যবহার করছি)
+        repo init --depth=1 -u https://github.com/minimal-twrp/manifest.git -b twrp-12.1 --no-repo-verify
         
         # সিঙ্ক কমান্ড
         repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle
