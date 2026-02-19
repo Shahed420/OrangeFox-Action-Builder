@@ -18,22 +18,27 @@ jobs:
         chmod a+x ~/bin/repo
         sudo ln -sf ~/bin/repo /usr/bin/repo
 
-    - name: Sync TWRP Source (Direct Method)
+    - name: Sync TWRP Source (Anti-Block Method)
       run: |
         mkdir ~/twrp
         cd ~/twrp
         
-        # গিটহাবের ডিফল্ট পারমিশন এরর এড়াতে
+        # গিটহাবের সেই বিষাক্ত কনফিগারেশন ডিলিট করা
+        git config --global --unset-all http.https://github.com/.extraheader || true
+        
+        # গিটহাবকে বাধ্য করা যেন সে অন্য একটি মিরর সাইট ব্যবহার করে যা ব্লকড নয়
+        # আমরা সরাসরি 'github.com' এর বদলে 'ghproxy.com' বা সরাসরি আইপি ব্যবহারের মতো ট্রিক করছি
+        git config --global url."https://ghproxy.com/https://github.com/".insteadOf "https://github.com/"
+        
         git config --global user.name "bot"
         git config --global user.email "bot@example.com"
         
-        # Repo টুল কাজ না করলে আমরা সরাসরি ম্যানিফেস্ট ক্লোন করে ম্যানুয়ালি সিঙ্ক করবো
-        # এটি গিটহাবের ইন্টারনাল অথেন্টিকেশন বাইপাস করবে
-        git clone --depth=1 https://github.com/minimal-twrp/manifest.git -b twrp-12.1 .repo/manifests
-        cp .repo/manifests/default.xml .repo/manifest.xml
+        # এবার সোর্স ইনিট (মিরর প্রক্সি দিয়ে)
+        repo init --depth=1 -u https://github.com/minimal-twrp/manifest.git -b twrp-12.1
         
-        # সরাসরি সোর্স ডাউনলোড শুরু
+        # সিঙ্ক কমান্ড
         repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle
+        
     - name: Setup Device Tree
       run: |
         # আপনার ডিভাইস ট্রি সরাসরি সোর্সে ক্লোন করা
