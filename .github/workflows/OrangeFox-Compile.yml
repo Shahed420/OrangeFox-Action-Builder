@@ -1,4 +1,4 @@
-name: TWRP Build - Infinix X6725B
+name: TWRP Recovery Build
 
 on:
   workflow_dispatch:
@@ -6,50 +6,44 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Setup Repo Tool
-        run: |
-          mkdir -p ~/bin
-          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
-          chmod a+x ~/bin/repo
-          # সিস্টেমের পুরনো repo এর বদলে লেটেস্টটি ব্যবহার নিশ্চিত করা
-          sudo ln -sf ~/bin/repo /usr/bin/repo
+    - name: Setup Repo
+      run: |
+        mkdir -p ~/bin
+        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+        chmod a+x ~/bin/repo
+        sudo ln -sf ~/bin/repo /usr/bin/repo
 
-      - name: Sync TWRP Source
-        run: |
-          mkdir ~/twrp
-          cd ~/twrp
-          git config --global user.name "bot"
-          git config --global user.email "bot@example.com"
-          
-          # অথেন্টিকেশন এরর এড়াতে এবং সরাসরি এইচটিটিপিএস ফোর্স করা
-          git config --global url."https://github.com/".insteadOf "git://github.com/"
-          
-          # লেটেস্ট repo দিয়ে ইনিশিয়ালাইজ (এখানেই আসল ফিক্স)
-          repo init --depth=1 -u https://github.com/minimal-twrp/manifest.git -b twrp-12.1
-          
-          # সিঙ্ক করার সময় নেটওয়ার্ক ফেইলিয়র এড়াতে অপ্টিমাইজড কমান্ড
-          repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle --optimized-fetch --prune
+    - name: Sync Source
+      run: |
+        mkdir ~/twrp
+        cd ~/twrp
+        git config --global user.name "YourName"
+        git config --global user.email "mail@example.com"
+        # OrangeFox এর এই সোর্সটি গিটহাবে কখনই ব্লক হয় না
+        repo init --depth=1 -u https://gitlab.com/OrangeFox/Manifest.git -b fox_12.1
+        repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle
 
-      - name: Setup Device Tree
-        run: |
-          # আপনার রিপোজিটরি থেকে ডিভাইস ট্রি কপি করা
-          mkdir -p ~/twrp/device/infinix/X6725B
-          cp -r ${{ github.workspace }}/* ~/twrp/device/infinix/X6725B/
+    - name: Setup Device Tree
+      run: |
+        # আপনার ডিভাইস ট্রি সরাসরি সোর্সে ক্লোন করা
+        git clone https://github.com/${{ github.repository }} -b main ~/twrp/device/infinix/X6725B
 
-      - name: Build
-        run: |
-          cd ~/twrp
-          export ALLOW_MISSING_DEPENDENCIES=true
-          . build/envsetup.sh
-          lunch twrp_X6725B-eng
-          mka vendorbootimage
+    - name: Build TWRP
+      run: |
+        cd ~/twrp
+        export ALLOW_MISSING_DEPENDENCIES=true
+        . build/envsetup.sh
+        # lunch কমান্ডটি আপনার ফাইল নাম অনুযায়ী দেওয়া হয়েছে
+        lunch twrp_X6725B-eng || lunch omni_X6725B-eng
+        mka vendorbootimage -j$(nproc --all)
 
-      - name: Upload Result
-        uses: actions/upload-artifact@v4
-        with:
-          name: TWRP-X6725B
-          path: ~/twrp/out/target/product/X6725B/vendor_boot.img
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: TWRP-Image
+        path: ~/twrp/out/target/product/X6725B/*.img
