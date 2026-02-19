@@ -10,10 +10,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Initializing Environment
+      - name: Setup Repo Tool
         run: |
-          sudo apt-get update
-          sudo apt-get install -y repo git python3
+          mkdir -p ~/bin
+          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+          chmod a+x ~/bin/repo
+          # সিস্টেমের পুরনো repo এর বদলে লেটেস্টটি ব্যবহার নিশ্চিত করা
+          sudo ln -sf ~/bin/repo /usr/bin/repo
 
       - name: Sync TWRP Source
         run: |
@@ -21,9 +24,15 @@ jobs:
           cd ~/twrp
           git config --global user.name "bot"
           git config --global user.email "bot@example.com"
-          # এই লিঙ্কটি অনেক বেশি স্টেবল এবং অথেন্টিকেশন চায় না
+          
+          # অথেন্টিকেশন এরর এড়াতে এবং সরাসরি এইচটিটিপিএস ফোর্স করা
+          git config --global url."https://github.com/".insteadOf "git://github.com/"
+          
+          # লেটেস্ট repo দিয়ে ইনিশিয়ালাইজ (এখানেই আসল ফিক্স)
           repo init --depth=1 -u https://github.com/minimal-twrp/manifest.git -b twrp-12.1
-          repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle
+          
+          # সিঙ্ক করার সময় নেটওয়ার্ক ফেইলিয়র এড়াতে অপ্টিমাইজড কমান্ড
+          repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle --optimized-fetch --prune
 
       - name: Setup Device Tree
         run: |
