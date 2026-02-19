@@ -26,8 +26,17 @@ jobs:
       run: |
         mkdir ~/twrp
         cd ~/twrp
-        repo init --depth=1 -u https://github.com/minimal-twrp/manifest.git -b twrp-12.1
-        repo sync -j$(nproc --all) --force-sync --no-tags --no-clone-bundle
+        # গিট কনফিগারেশন সেট করা
+        git config --global user.name "Your Name"
+        git config --global user.email "you@example.com"
+        git config --global color.ui false
+        
+        # সরাসরি HTTP ব্যবহার করে রিপো ইনিট করা
+        repo init --depth=1 -u https://github.com/minimal-twrp/manifest.git -b twrp-12.1 --git-lfs
+        
+        # সিঙ্ক করার সময় অথেন্টিকেশন এরর এড়াতে এই ফ্ল্যাগগুলো জরুরি
+        repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle
+        
     - name: Copy Device Tree
       run: |
         cp -r ${{ github.workspace }}/device ~/twrp/
