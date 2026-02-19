@@ -1,9 +1,18 @@
-name: TWRP Recovery Build
+name: TWRP Build
 
 on:
   workflow_dispatch:
 
+env:
+  # এখানে আমরা টোকেনটিকে এনভায়রনমেন্ট ভেরিয়েবল হিসেবে ডিফাইন করছি
+  GH_TOKEN: ${{ secrets.MY_TOKEN }}
+
 jobs:
+  build:
+    runs-on: ubuntu-latest
+steps:
+      # ... বাকি সব স্টেপ ...
+  jobs:
   build:
     runs-on: ubuntu-latest
 
@@ -25,10 +34,12 @@ jobs:
         git config --global user.name "Builder"
         git config --global user.email "builder@example.com"
         
-        # আপনার সেভ করা MY_TOKEN ব্যবহার করে সিঙ্ক করা
-        repo init --depth=1 -u https://${{ secrets.MY_TOKEN }}@github.com/minimal-twrp/manifest.git -b twrp-12.1
+        # সরাসরি টোকেন ইনজেক্ট করা
+        repo init --depth=1 -u https://$GH_TOKEN@github.com/minimal-twrp/manifest.git -b twrp-12.1
         
         repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle
+      env:
+        GH_TOKEN: ${{ secrets.MY_TOKEN }}
         
     - name: Setup Device Tree
       run: |
